@@ -20,14 +20,6 @@ url = "https://dtag.tcas.cloud.tbintra.net/siebel/app/callcenter/enu/?SWECmd=Got
 
 # Tarayıcıyı başlat
 if st.button("1️⃣ Tarayıcıyı Aç ve Giriş Yap"):
-    options = Options()
-    options.add_argument("--start-maximized")
-    options.add_argument('--disable-blink-features=AutomationControlled')
-    driver = uc.Chrome(options=options)
-    driver.get(url)
-    st.session_state.driver = driver
-    st.info("Tarayıcı açıldı. Lütfen giriş yapın. Giriş tamamlandıktan sonra aşağıdaki 'Devam Et' butonuna tıklayın.")
-    if st.button("1️⃣ Tarayıcıyı Aç ve Giriş Yap"):
     try:
         options = Options()
         options.add_argument("--start-maximized")
@@ -40,7 +32,6 @@ if st.button("1️⃣ Tarayıcıyı Aç ve Giriş Yap"):
         st.success("✅ Tarayıcı açıldı. Lütfen giriş yapın. Giriş tamamlandıktan sonra aşağıdaki 'Devam Et' butonuna tıklayın.")
     except Exception as e:
         st.error(f"❌ Tarayıcı başlatılamadı: {e}")
-
 
 # Devam Et butonu: Giriş tamamlandıysa
 if st.session_state.driver is not None:
