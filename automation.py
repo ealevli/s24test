@@ -6,24 +6,23 @@ from selenium.webdriver.support import expected_conditions as EC
 
 _driver = None
 
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+
 def launch_driver():
-    global _driver
-    if _driver:
-        return _driver
+    options = Options()
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
 
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1920,1080")
-
-    # Streamlit Cloud ortamına uygun path
+    # Linux Streamlit Cloud ortamında kullanılacak binary konumları
     options.binary_location = "/usr/bin/chromium"
     service = Service("/usr/lib/chromium/chromedriver")
 
-    _driver = webdriver.Chrome(service=service, options=options)
-    return _driver
+    driver = webdriver.Chrome(service=service, options=options)
+    return driver
+
 
 def extract_case_data(driver, case_number):
     wait = WebDriverWait(driver, 20)
