@@ -18,12 +18,9 @@ def launch_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
 
-    # Streamlit Cloud ortamı için doğru path:
-    chrome_path = "/usr/bin/chromium-browser"
-    driver_path = "/usr/bin/chromedriver"
-
-    options.binary_location = chrome_path
-    service = Service(driver_path)
+    # Debian tabanlı Streamlit ortamında çalışan path'ler:
+    options.binary_location = "/usr/bin/chromium"
+    service = Service("/usr/lib/chromium/chromedriver")
 
     _driver = webdriver.Chrome(service=service, options=options)
     return _driver
