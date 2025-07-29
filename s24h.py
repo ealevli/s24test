@@ -7,7 +7,6 @@ import base64
 
 from automation import launch_driver, extract_case_data
 
-# Arka plan ayarı
 @st.cache_data
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
@@ -31,11 +30,9 @@ def set_bg_from_local(image_file):
     """
     st.markdown(bg_image_style, unsafe_allow_html=True)
 
-# Sayfa ayarı
 st.set_page_config(page_title="S24H Veri Çekme Aracı", layout="wide")
 set_bg_from_local("assets/background.jpg")
 
-# Başlıklar
 st.markdown("<h1 style='text-align: center;'>S24H Veri Çekme Otomasyon Aracı</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Bu aracı kullanmadan önce VPN bağlantısınızı aktif hale getirip manuel olarak siteye giriş yapın.</p>", unsafe_allow_html=True)
 
