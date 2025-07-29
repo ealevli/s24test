@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -16,9 +17,11 @@ def launch_driver():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-gpu")
-    options.add_argument("--headless")
+    options.add_argument("--headless")  # İstersen kapatabilirsin
 
-    _driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)
+    # ✅ Yeni yöntem: Service nesnesi oluştur ve driver'a ver
+    service = Service(ChromeDriverManager().install())
+    _driver = webdriver.Chrome(service=service, options=options)
     return _driver
 
 def extract_case_data(driver, case_number):
