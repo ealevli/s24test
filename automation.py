@@ -3,7 +3,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 
 _driver = None
 
@@ -13,14 +12,19 @@ def launch_driver():
         return _driver
 
     options = webdriver.ChromeOptions()
-    options.add_argument("--start-maximized")
-    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--headless")
     options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    options.add_argument("--headless")  # İstersen kapatabilirsin
+    options.add_argument("--window-size=1920,1080")
 
-    # ✅ Yeni yöntem: Service nesnesi oluştur ve driver'a ver
-    service = Service(ChromeDriverManager().install())
+    # Streamlit Cloud ortamı için doğru path:
+    chrome_path = "/usr/bin/chromium-browser"
+    driver_path = "/usr/bin/chromedriver"
+
+    options.binary_location = chrome_path
+    service = Service(driver_path)
+
     _driver = webdriver.Chrome(service=service, options=options)
     return _driver
 
