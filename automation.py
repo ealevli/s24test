@@ -16,9 +16,9 @@ def launch_driver():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-gpu")
-    options.add_argument("--headless")  # Cloud ortamı için isteğe bağlı
+    options.add_argument("--headless")
 
-    _driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+    _driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)
     return _driver
 
 def extract_case_data(driver, case_number):
