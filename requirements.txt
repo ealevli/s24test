@@ -3,3 +3,4 @@ undetected-chromedriver
 selenium
 pandas
 setuptools  # distutils'in yerine geçer
+undetected-chromedriver==3.5.5
