@@ -1,20 +1,24 @@
-import undetected_chromedriver as uc
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 
-_driver = None  # Global driver nesnesi
+_driver = None
 
 def launch_driver():
     global _driver
     if _driver:
         return _driver
 
-    options = uc.ChromeOptions()
+    options = webdriver.ChromeOptions()
     options.add_argument("--start-maximized")
-    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--headless")  # Cloud ortamı için isteğe bağlı
 
-    _driver = uc.Chrome(options=options)
+    _driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
     return _driver
 
 def extract_case_data(driver, case_number):
