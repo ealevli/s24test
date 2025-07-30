@@ -1,75 +1,139 @@
 import streamlit as st
 import pandas as pd
-import time
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import time
 
-# Sayfa ayarları
-st.set_page_config(page_title="TCAS Case Scraper", layout="wide")
-st.title("🚛 Daimler TCAS Case Data Scraper")
+# --- Streamlit Arayüzü Ayarları ---
+st.set_page_config(page_title="Siebel Veri Çekme Botu", layout="wide")
+st.title("📊 Siebel CRM - Otomatik Veri Çekme Botu")
+st.markdown("""
+Bu araç, Siebel paneline verdiğiniz kullanıcı bilgileriyle otomatik olarak giriş yapar, 
+Case Numaralarını sorgular ve sonuçları size bir tablo olarak sunar.
 
-# Tarayıcı durumu yönetimi
-if 'driver' not in st.session_state:
-    st.session_state.driver = None
+**Kullanım:**
+1.  **VPN bağlantınızın aktif olduğundan emin olun.** (Eğer bu uygulama şirket dışından da çalışacaksa)
+2.  Siebel giriş bilgilerinizi ve Case Numaralarını girin.
+3.  'Verileri Çekmeye Başla' butonuna tıklayın ve işlemin bitmesini bekleyin.
+""")
 
-url = "https://dtag.tcas.cloud.tbintra.net/siebel/app/callcenter/enu/?SWECmd=GotoView&SWEView=CAC+S24+Phone+Fix+View&SWERF=1&SWEHo=&SWEBU=1"
+# --- Session State (Oturum Durumu) Yönetimi ---
+if 'results' not in st.session_state:
+    st.session_state.results = []
 
-# Tarayıcıyı başlat
-if st.button("1️⃣ Tarayıcıyı Aç ve Giriş Yap"):
-    try:
-        options = Options()
-        options.add_argument("--start-maximized")
-        options.add_argument('--disable-blink-features=AutomationControlled')
+# --- Arayüz Elemanları ---
+st.sidebar.header("Giriş Bilgileri")
+username = st.sidebar.text_input("Kullanıcı Adı (örn: tbdir\\kullanici)")
+password = st.sidebar.text_input("Şifre", type="password")
 
-        driver = uc.Chrome(options=options)
-        driver.get(url)
+st.header("Case Numaraları")
+case_numbers_text = st.text_area(
+    "Her satıra bir Case Numarası gelecek şekilde aşağıya yapıştırın:", 
+    height=200, 
+    key="case_numbers_input"
+)
 
-        st.session_state.driver = driver
-        st.success("✅ Tarayıcı açıldı. Lütfen giriş yapın. Giriş tamamlandıktan sonra aşağıdaki 'Devam Et' butonuna tıklayın.")
-    except Exception as e:
-        st.error(f"❌ Tarayıcı başlatılamadı: {e}")
+# Tek bir butonla tüm işlemi başlat
+if st.button("🚀 Verileri Çekmeye Başla"):
+    # Gerekli bilgilerin girilip girilmediğini kontrol et
+    if not username or not password or not case_numbers_text.strip():
+        st.warning("Lütfen kullanıcı adı, şifre ve en az bir case numarası giriniz.")
+    else:
+        case_numbers = [line.strip() for line in case_numbers_text.split('\n') if line.strip()]
+        st.session_state.results = []  # Her çalıştırmada sonuçları temizle
+        driver = None  # Driver'ı başta None olarak ayarla
 
-# Devam Et butonu: Giriş tamamlandıysa
-if st.session_state.driver is not None:
-    st.markdown("---")
-    st.subheader("2️⃣ Case Numaralarını Girin ve Verileri Çekin")
+        try:
+            # --- Tarayıcıyı Başlatma ---
+            with st.spinner("Tarayıcı başlatılıyor ve ayarlar yapılıyor..."):
+                options = uc.ChromeOptions()
+                # Streamlit Cloud'da headless modda (arayüz olmadan) çalışması için gerekli ayarlar
+                options.add_argument('--headless')
+                options.add_argument('--no-sandbox')
+                options.add_argument('--disable-dev-shm-usage')
+                options.add_argument("--disable-gpu")
+                options.add_argument("--window-size=1920,1080")
+                
+                # 'undetected_chromedriver' yerine standart 'webdriver' kullanmak 
+                # Streamlit Cloud'da daha stabil olabilir. Eğer uc ile sorun yaşarsanız
+                # from selenium import webdriver
+                # driver = webdriver.Chrome(options=options)
+                # satırlarını deneyebilirsiniz.
+                driver = uc.Chrome(options=options)
 
-    case_input = st.text_area("Case Numaralarını girin (her satıra bir tane):")
-    case_list = [c.strip() for c in case_input.strip().splitlines() if c.strip()]
+            # --- Giriş İşlemi ---
+            with st.spinner("Giriş sayfasına gidiliyor ve login yapılıyor..."):
+                url = "https://dtag.tcas.cloud.tbintra.net/siebel/app/callcenter/enu/"
+                driver.get(url)
 
-    if st.button("🔍 Devam Et ve Verileri Çek"):
-        results = []
-        driver = st.session_state.driver
+                # DİKKAT: 's_swepi_1', 's_swepi_2' ve 's_swepi_22' ID'leri
+                # sizin panelinizin giriş ekranındaki gerçek ID'ler ile değiştirilmelidir.
+                # Tarayıcıda ilgili alana sağ tıklayıp "İncele" diyerek doğru ID'leri bulun.
+                user_field = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, "s_swepi_1")))
+                pass_field = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, "s_swepi_2")))
+                login_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.ID, "s_swepi_22")))
 
-        for case in case_list:
-            try:
-                # Case arama alanını bul
-                search_box = WebDriverWait(driver, 20).until(
-                    EC.presence_of_element_located((By.ID, "dashsearchinp"))
-                )
-                search_box.clear()
-                search_box.send_keys(case)
-                search_box.send_keys(Keys.RETURN)
-                time.sleep(3)
+                user_field.send_keys(username)
+                pass_field.send_keys(password)
+                login_button.click()
+            
+            st.success("✅ Giriş başarılı!")
 
-                # İsim ve telefon numarasını çek
-                driver_name = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.NAME, "s_1_1_80_0"))
-                ).get_attribute("value")
+            # --- Veri Çekme İşlemi ---
+            st.header("İşlem Durumu")
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            total_cases = len(case_numbers)
 
-                driver_phone = driver.find_element(By.NAME, "s_1_1_82_0").get_attribute("value")
+            for i, case in enumerate(case_numbers):
+                status_text.info(f"🔄 Sorgulanıyor: {case} ({i+1}/{total_cases})")
+                try:
+                    search_box = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, "dashsearchinp")))
+                    search_box.clear()
+                    search_box.send_keys(case)
+                    search_box.send_keys(Keys.RETURN)
+                    time.sleep(3)
 
-                results.append({"Case Number": case, "Driver Name": driver_name, "Driver Phone": driver_phone})
-            except Exception as e:
-                results.append({"Case Number": case, "Driver Name": "HATA", "Driver Phone": str(e)})
+                    driver_name = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "s_1_1_80_0"))).get_attribute("value")
+                    driver_phone = driver.find_element(By.NAME, "s_1_1_82_0").get_attribute("value")
 
-        df = pd.DataFrame(results)
-        st.success("Veriler çekildi!")
-        st.dataframe(df)
+                    st.session_state.results.append({
+                        "Case Number": case, "Müşteri Adı": driver_name, "Telefon Numarası": driver_phone, "Durum": "Başarılı"
+                    })
+                except Exception as e:
+                    st.session_state.results.append({
+                        "Case Number": case, "Müşteri Adı": "HATA", "Telefon Numarası": "HATA", "Durum": f"Veri çekilemedi"
+                    })
+                progress_bar.progress((i + 1) / total_cases)
+            
+            status_text.success("✅ Tüm işlemler tamamlandı!")
 
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button("⬇️ Excel Olarak İndir", csv, "case_data.csv")
+        except Exception as e:
+            st.error(f"❌ Bir hata oluştu: {e}")
+            st.error("Giriş bilgilerinizi, VPN bağlantınızı veya koddaki element ID'lerini kontrol edin.")
+        
+        finally:
+            # İşlem bitince veya hata olunca tarayıcıyı güvenli bir şekilde kapat
+            if driver:
+                driver.quit()
+
+# --- Sonuçları Gösterme ---
+if st.session_state.results:
+    st.header("Sonuçlar")
+    df = pd.DataFrame(st.session_state.results)
+    st.dataframe(df)
+
+    @st.cache_data
+    def convert_df_to_csv(df_to_convert):
+        return df_to_convert.to_csv(index=False).encode('utf-8-sig')
+
+    csv = convert_df_to_csv(df)
+    st.download_button(
+        label="📥 Sonuçları Excel (CSV) Olarak İndir",
+        data=csv,
+        file_name='siebel_case_sonuclari.csv',
+        mime='text/csv',
+    )
