@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
-import undetected_chromedriver as uc
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 import time
 
 # --- Streamlit Arayüzü Ayarları ---
@@ -15,9 +17,8 @@ Bu araç, Siebel paneline verdiğiniz kullanıcı bilgileriyle otomatik olarak g
 Case Numaralarını sorgular ve sonuçları size bir tablo olarak sunar.
 
 **Kullanım:**
-1.  **VPN bağlantınızın aktif olduğundan emin olun.** (Eğer bu uygulama şirket dışından da çalışacaksa)
-2.  Siebel giriş bilgilerinizi ve Case Numaralarını girin.
-3.  'Verileri Çekmeye Başla' butonuna tıklayın ve işlemin bitmesini bekleyin.
+1.  Siebel giriş bilgilerinizi ve Case Numaralarını girin.
+2.  'Verileri Çekmeye Başla' butonuna tıklayın ve işlemin bitmesini bekleyin.
 """)
 
 # --- Session State (Oturum Durumu) Yönetimi ---
@@ -49,20 +50,16 @@ if st.button("🚀 Verileri Çekmeye Başla"):
         try:
             # --- Tarayıcıyı Başlatma ---
             with st.spinner("Tarayıcı başlatılıyor ve ayarlar yapılıyor..."):
-                options = uc.ChromeOptions()
+                options = Options()
                 # Streamlit Cloud'da headless modda (arayüz olmadan) çalışması için gerekli ayarlar
-                options.add_argument('--headless')
-                options.add_argument('--no-sandbox')
-                options.add_argument('--disable-dev-shm-usage')
+                options.add_argument("--headless")
+                options.add_argument("--no-sandbox")
+                options.add_argument("--disable-dev-shm-usage")
                 options.add_argument("--disable-gpu")
                 options.add_argument("--window-size=1920,1080")
                 
-                # 'undetected_chromedriver' yerine standart 'webdriver' kullanmak 
-                # Streamlit Cloud'da daha stabil olabilir. Eğer uc ile sorun yaşarsanız
-                # from selenium import webdriver
-                # driver = webdriver.Chrome(options=options)
-                # satırlarını deneyebilirsiniz.
-                driver = uc.Chrome(options=options)
+                # Streamlit Cloud'da Selenium'u çalıştırmak için standart yapılandırma
+                driver = webdriver.Chrome(options=options)
 
             # --- Giriş İşlemi ---
             with st.spinner("Giriş sayfasına gidiliyor ve login yapılıyor..."):
@@ -71,7 +68,6 @@ if st.button("🚀 Verileri Çekmeye Başla"):
 
                 # DİKKAT: 's_swepi_1', 's_swepi_2' ve 's_swepi_22' ID'leri
                 # sizin panelinizin giriş ekranındaki gerçek ID'ler ile değiştirilmelidir.
-                # Tarayıcıda ilgili alana sağ tıklayıp "İncele" diyerek doğru ID'leri bulun.
                 user_field = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, "s_swepi_1")))
                 pass_field = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, "s_swepi_2")))
                 login_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.ID, "s_swepi_22")))
@@ -113,7 +109,7 @@ if st.button("🚀 Verileri Çekmeye Başla"):
 
         except Exception as e:
             st.error(f"❌ Bir hata oluştu: {e}")
-            st.error("Giriş bilgilerinizi, VPN bağlantınızı veya koddaki element ID'lerini kontrol edin.")
+            st.error("Giriş bilgilerinizi veya koddaki element ID'lerini kontrol edin. Eğer siteniz bir VPN gerektiriyorsa, bu uygulama Streamlit Cloud üzerinden çalışmayabilir.")
         
         finally:
             # İşlem bitince veya hata olunca tarayıcıyı güvenli bir şekilde kapat
